@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>vb — Phase 02 Blueprint</title>
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap");
+
+      :root {
+        --bg: #0d0d0f;
+        --surface: #111114;
+        --surface2: #151518;
+        --border: #1e1e26;
+        --accent: #00ff87;
+        --accent2: #0ff;
+        --accent3: #ff6b35;
+        --text: #e8e8ed;
+        --muted: #52526a;
+        --mono: "JetBrains Mono", monospace;
+        --sans: "Syne", sans-serif;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        padding: 60px 40px;
+        line-height: 1.7;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      .header {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 40px;
+        margin-bottom: 60px;
+      }
+
+      .tag {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--accent2);
+        border: 1px solid rgba(0, 255, 255, 0.3);
+        padding: 4px 10px;
+        display: inline-block;
+        margin-bottom: 18px;
+      }
+
+      h1 {
+        font-size: 48px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+      }
+
+      h1 span {
+        color: var(--accent);
+      }
+
+      .sub {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 10px;
+      }
+
+      .section {
+        margin-bottom: 60px;
+      }
+
+      .section-title {
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--accent);
+        margin-bottom: 20px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 28px;
+        margin-bottom: 20px;
+      }
+
+      .card h3 {
+        font-size: 20px;
+        margin-bottom: 14px;
+      }
+
+      .code-block {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        padding: 20px;
+        border-radius: 6px;
+        font-family: var(--mono);
+        font-size: 12px;
+        margin-top: 15px;
+        white-space: pre-wrap;
+        line-height: 1.6;
+      }
+
+      .validate {
+        margin-top: 20px;
+        padding: 16px 20px;
+        border-radius: 6px;
+        border: 1px dashed rgba(0, 255, 135, 0.3);
+        background: rgba(0, 255, 135, 0.03);
+        font-family: var(--mono);
+        font-size: 12px;
+        color: #7effc5;
+      }
+
+      .error-block {
+        margin-top: 15px;
+        padding: 16px 20px;
+        border-radius: 6px;
+        border: 1px dashed rgba(255, 107, 53, 0.4);
+        background: rgba(255, 107, 53, 0.05);
+        font-family: var(--mono);
+        font-size: 12px;
+        color: #ffb199;
+      }
+
+      footer {
+        margin-top: 80px;
+        padding-top: 30px;
+        border-top: 1px solid var(--border);
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--muted);
+        display: flex;
+        justify-content: space-between;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="tag">Engineering Blueprint</div>
+        <h1><span>vb</span> — Phase 02 · Resolution Engine</h1>
+        <div class="sub">
+          Deterministic Mapping · Topic → Lens → File Binding Zero Magic · Zero
+          Ambiguity
+        </div>
+      </div>
+
+      <!-- ARCHITECTURE LAYER -->
+      <div class="section">
+        <div class="section-title">Package Structure</div>
+        <div class="card">
+          <div class="code-block">
+            /internal /resolver topic.go lens.go binding.go /index loader.go
+            /errors errors.go
+          </div>
+          <p
+            style="
+              margin-top: 15px;
+              font-family: var(--mono);
+              font-size: 12px;
+              color: #aaa;
+            "
+          >
+            Resolver layer must not depend on renderer or linter. Pure
+            resolution logic only.
+          </p>
+        </div>
+      </div>
+
+      <!-- EXECUTION FLOW -->
+      <div class="section">
+        <div class="section-title">Resolution Flow</div>
+        <div class="card">
+          <div class="code-block">
+            CLI Input: vb disk --why Execution Order: 1. Load vault path (Phase
+            01) 2. Load index.json into memory 3. Resolve topic via index map 4.
+            Resolve lens flag to filename 5. Construct absolute file path 6.
+            Validate file existence 7. Return resolved file path
+          </div>
+        </div>
+      </div>
+
+      <!-- TOPIC RESOLVER -->
+      <div class="section">
+        <div class="card">
+          <h3>01 · Topic Resolver</h3>
+
+          <div class="code-block">
+            func ResolveTopic(topic string) (string, error) { path, exists :=
+            index.Topics[topic] if !exists { return "", ErrTopicNotFound }
+            return filepath.Join(vaultRoot, path), nil }
+          </div>
+
+          <div class="error-block">
+            Error Cases: - Topic not found in index - index.json corrupted -
+            index.json missing
+          </div>
+        </div>
+      </div>
+
+      <!-- LENS MAPPING -->
+      <div class="section">
+        <div class="card">
+          <h3>02 · Lens Mapping</h3>
+
+          <div class="code-block">
+            var LensToFile = map[string]string{ "why": "WHY.md", "importance":
+            "IMPORTANCE.md", "cli-tools": "CLI_TOOLS.md", "arch": "ARCH.md",
+            "used": "USED.md", "gotchas": "GOTCHAS.md", "refs": "REFS.md", }
+          </div>
+
+          <div class="code-block">
+            func ResolveLens(flag string) (string, error) { file, exists :=
+            LensToFile[flag] if !exists { return "", ErrInvalidLens } return
+            file, nil }
+          </div>
+
+          <div class="error-block">
+            Error Cases: - Multiple lens flags passed - No lens flag passed -
+            Unknown lens flag
+          </div>
+        </div>
+      </div>
+
+      <!-- FILE BINDING -->
+      <div class="section">
+        <div class="card">
+          <h3>03 · Strict File Validation</h3>
+
+          <div class="code-block">
+            func Bind(topicPath string, lensFile string) (string, error) {
+            fullPath := filepath.Join(topicPath, lensFile) if _, err :=
+            os.Stat(fullPath); os.IsNotExist(err) { return "",
+            ErrLensFileMissing } return fullPath, nil }
+          </div>
+
+          <div class="error-block">
+            Error Case: Lens file missing: "WHY.md not authored yet for topic
+            'disk'"
+          </div>
+        </div>
+      </div>
+
+      <!-- ERROR MODEL -->
+      <div class="section">
+        <div class="section-title">Error Model</div>
+        <div class="card">
+          <div class="code-block">
+            var ( ErrTopicNotFound = errors.New("topic not found in index")
+            ErrInvalidLens = errors.New("invalid lens flag") ErrLensFileMissing
+            = errors.New("lens file missing") )
+          </div>
+          <p
+            style="
+              margin-top: 15px;
+              font-family: var(--mono);
+              font-size: 12px;
+              color: #aaa;
+            "
+          >
+            Errors must be explicit and user-readable. No silent fallback. No
+            auto-creation.
+          </p>
+        </div>
+      </div>
+
+      <!-- VALIDATION -->
+      <div class="section">
+        <div class="card">
+          <h3>Validation Checklist</h3>
+
+          <div class="validate">
+            ✔ Query existing topic + existing lens ✔ Query existing topic +
+            missing lens file ✔ Query non-existing topic ✔ Pass invalid lens
+            flag ✔ Confirm deterministic error messaging ✔ Confirm no filesystem
+            scan occurs (index-only resolution)
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <span>vb engineering blueprint</span>
+        <span>phase 02 · deterministic resolution</span>
+      </footer>
+    </div>
+  </body>
+</html>
