@@ -6,12 +6,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/ReggieAlbiosA/vb/internal/hook"
 )
 
 // Open launches the configured editor on filePath.
 // If filePath does not exist, it is created (empty) before opening.
 // editor is read from vault config (cfg.Editor); falls back to $EDITOR env var if blank.
-func Open(filePath string, editor string) error {
+// After the editor exits successfully, hook.OnSave is called with lens and lintOnSave.
+func Open(filePath string, editor string, lens string, lintOnSave bool) error {
 	if err := ensureFile(filePath); err != nil {
 		return fmt.Errorf("creating %s: %w", filePath, err)
 	}
@@ -26,7 +29,12 @@ func Open(filePath string, editor string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	hook.OnSave(filePath, lens, lintOnSave)
+	return nil
 }
 
 // ensureFile creates filePath (and parent dirs) if it does not already exist.
