@@ -6,6 +6,7 @@ import (
 
 	"github.com/ReggieAlbiosA/vb/internal/config"
 	"github.com/ReggieAlbiosA/vb/internal/index"
+	"github.com/ReggieAlbiosA/vb/internal/logger"
 	"github.com/ReggieAlbiosA/vb/internal/render"
 	"github.com/ReggieAlbiosA/vb/internal/resolver"
 	"github.com/ReggieAlbiosA/vb/internal/vault"
@@ -34,7 +35,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&flagImportance, "importance", false, "importance and impact of this topic")
 	rootCmd.Flags().BoolVar(&flagCLITools, "cli-tools", false, "CLI tools for this topic")
 	rootCmd.Flags().BoolVar(&flagArch, "arch", false, "architecture overview")
-	rootCmd.Flags().BoolVar(&flagUsed, "used", false, "how this topic is used")
+	rootCmd.Flags().BoolVar(&flagUsed, "used", false, "log this query to USED.md")
 	rootCmd.Flags().BoolVar(&flagGotchas, "gotchas", false, "gotchas and pitfalls")
 	rootCmd.Flags().BoolVar(&flagRefs, "refs", false, "reference links")
 	rootCmd.Flags().BoolVar(&flagGUI, "gui", false, "open in GUI viewer (modifier, not a lens)")
@@ -97,5 +98,13 @@ func runQuery(cmd *cobra.Command, args []string) error {
 	}
 
 	// Hand off to renderer (Phase 03), passing lens, flagGUI, and theme.
-	return render.File(filePath, lens, flagGUI, cfg.Theme)
+	if err := render.File(filePath, lens, flagGUI, cfg.Theme); err != nil {
+		return err
+	}
+
+	// Log to USED.md if --used flag is set (Phase 04).
+	if flagUsed {
+		return logger.Append(topicDir, topic, lens)
+	}
+	return nil
 }

@@ -14,7 +14,6 @@ func TestResolveLens_AllValidFlags(t *testing.T) {
 		"importance": "IMPORTANCE.md",
 		"cli-tools":  "CLI_TOOLS.md",
 		"arch":       "ARCH.md",
-		"used":       "USED.md",
 		"gotchas":    "GOTCHAS.md",
 		"refs":       "REFS.md",
 	}
@@ -77,6 +76,26 @@ func TestActiveLens_MultipleFlags(t *testing.T) {
 	_, err := resolver.ActiveLens(fs)
 	if !errors.Is(err, resolver.ErrMultipleLenses) {
 		t.Errorf("expected ErrMultipleLenses, got %v", err)
+	}
+}
+
+func TestActiveLens_UsedNotALens(t *testing.T) {
+	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)
+	for name := range resolver.LensToFile {
+		fs.Bool(name, false, "")
+	}
+	fs.Bool("used", false, "")
+	if err := fs.Parse([]string{"--used", "--why"}); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := resolver.ActiveLens(fs)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// --used is not in LensToFile — only --why must be returned.
+	if got != "why" {
+		t.Errorf("expected lens 'why' (--used ignored), got %q", got)
 	}
 }
 
