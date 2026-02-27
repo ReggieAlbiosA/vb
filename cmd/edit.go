@@ -78,5 +78,5 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return editor.Open(filePath, cfg.Editor)
+	return editor.Open(filePath, cfg.Editor, lens, cfg.LintOnSave)
 }
