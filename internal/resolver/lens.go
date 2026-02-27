@@ -8,13 +8,12 @@ import (
 
 // LensToFile maps CLI flag names to their corresponding vault filenames.
 // --gui is intentionally absent — it is a rendering modifier, not a lens.
-// It is parsed in the cmd layer and passed to the renderer in Phase 03/06.
+// --used is intentionally absent — it is a query logger modifier (Phase 04), not a lens.
 var LensToFile = map[string]string{
 	"why":        "WHY.md",
 	"importance": "IMPORTANCE.md",
 	"cli-tools":  "CLI_TOOLS.md",
 	"arch":       "ARCH.md",
-	"used":       "USED.md",
 	"gotchas":    "GOTCHAS.md",
 	"refs":       "REFS.md",
 }

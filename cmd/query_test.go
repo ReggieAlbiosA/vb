@@ -115,3 +115,24 @@ func TestQueryCmd_GUIModifier(t *testing.T) {
 		t.Fatalf("vb disk --why --gui: %v", err)
 	}
 }
+
+// TestQueryCmd_UsedFlag: vb disk --why --used → renders output and appends entry to USED.md.
+func TestQueryCmd_UsedFlag(t *testing.T) {
+	resetQueryFlags(t)
+	dir := setupVaultWithTopic(t)
+
+	_, err := execCmd(t, dir, "disk", "--why", "--used")
+	if err != nil {
+		t.Fatalf("vb disk --why --used: %v", err)
+	}
+
+	// USED.md must exist inside the topic directory.
+	usedPath := filepath.Join(dir, "hardware", "disk", "USED.md")
+	data, readErr := os.ReadFile(usedPath)
+	if readErr != nil {
+		t.Fatalf("USED.md not created: %v", readErr)
+	}
+	if len(data) == 0 {
+		t.Error("USED.md is empty — expected at least one log entry")
+	}
+}

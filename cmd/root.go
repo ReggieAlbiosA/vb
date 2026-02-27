@@ -25,4 +25,6 @@ func Execute() {
 func init() {
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(reindexCmd)
+	rootCmd.AddCommand(editCmd)
+	rootCmd.AddCommand(tagCmd)
 }
