@@ -14,7 +14,7 @@ func TestOpen_ExistingFile(t *testing.T) {
 	}
 
 	// "true" exits 0 immediately without modifying the file.
-	if err := Open(path, "true"); err != nil {
+	if err := Open(path, "true", "why", false); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -28,7 +28,7 @@ func TestOpen_CreatesFile(t *testing.T) {
 	path := filepath.Join(dir, "ARCH.md")
 	// Do not pre-create the file.
 
-	if err := Open(path, "true"); err != nil {
+	if err := Open(path, "true", "arch", false); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -42,7 +42,7 @@ func TestOpen_CreatesMissingDirs(t *testing.T) {
 	path := filepath.Join(dir, "newdir", "subdir", "GOTCHAS.md")
 	// Parent dirs do not exist.
 
-	if err := Open(path, "true"); err != nil {
+	if err := Open(path, "true", "gotchas", false); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -60,7 +60,7 @@ func TestOpen_NoEditor(t *testing.T) {
 
 	t.Setenv("EDITOR", "")
 
-	err := Open(path, "")
+	err := Open(path, "", "why", false)
 	if err == nil {
 		t.Fatal("expected error for no editor configured, got nil")
 	}
@@ -79,6 +79,18 @@ func TestResolveEditor_EnvFallback(t *testing.T) {
 	got := resolveEditor("")
 	if got != "nano" {
 		t.Errorf("resolveEditor(%q) = %q, want %q", "", got, "nano")
+	}
+}
+
+func TestOpen_LintOnSaveTriggered(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "WHY.md")
+	if err := os.WriteFile(path, []byte("# Why\n\nBecause it matters."), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// lintOnSave=true — hook.OnSave runs after editor exits; valid file should not error.
+	if err := Open(path, "true", "why", true); err != nil {
+		t.Fatalf("unexpected error with lintOnSave=true: %v", err)
 	}
 }
 
