@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ReggieAlbiosA/vb/internal/config"
 	"github.com/ReggieAlbiosA/vb/internal/index"
 	"github.com/ReggieAlbiosA/vb/internal/render"
 	"github.com/ReggieAlbiosA/vb/internal/resolver"
@@ -65,6 +66,12 @@ func runQuery(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Load config for theme (Phase 03).
+	cfg, err := config.Load(ctx.VaultRoot)
+	if err != nil {
+		return err
+	}
+
 	// Load index from existing package.
 	schema, err := index.Load(ctx.VaultRoot)
 	if err != nil {
@@ -89,6 +96,6 @@ func runQuery(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Hand off to renderer (Phase 03), passing flagGUI modifier.
-	return render.File(filePath, flagGUI)
+	// Hand off to renderer (Phase 03), passing lens, flagGUI, and theme.
+	return render.File(filePath, lens, flagGUI, cfg.Theme)
 }
