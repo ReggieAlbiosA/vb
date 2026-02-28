@@ -34,8 +34,27 @@ func TestFile_GUIFallthrough(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// gui=true is a no-op stub until Phase 06 — falls through to terminal renderer.
+	// In non-GUI builds, GUIRendererFactory is nil — gui=true falls through to terminal.
 	if err := render.File(path, "why", true, "dark"); err != nil {
 		t.Fatalf("unexpected error with gui=true: %v", err)
+	}
+}
+
+func TestFile_GUIRendererFactory(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "WHY.md")
+	if err := os.WriteFile(path, []byte("# Why\n\nBecause it matters."), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Set a custom factory that returns TerminalRenderer (simulates stub build).
+	old := render.GUIRendererFactory
+	render.GUIRendererFactory = func() render.Renderer {
+		return &render.TerminalRenderer{}
+	}
+	t.Cleanup(func() { render.GUIRendererFactory = old })
+
+	if err := render.File(path, "why", true, "dark"); err != nil {
+		t.Fatalf("unexpected error with GUIRendererFactory set: %v", err)
 	}
 }

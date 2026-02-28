@@ -116,6 +116,18 @@ func TestQueryCmd_GUIModifier(t *testing.T) {
 	}
 }
 
+// TestQueryCmd_GUIFlag_NonGUIBuild: --gui in non-GUI build → terminal output, no error.
+func TestQueryCmd_GUIFlag_NonGUIBuild(t *testing.T) {
+	resetQueryFlags(t)
+	dir := setupVaultWithTopic(t)
+
+	// In non-GUI builds, GUIRendererFactory is nil, so gui=true falls through to terminal.
+	_, err := execCmd(t, dir, "disk", "--why", "--gui")
+	if err != nil {
+		t.Fatalf("expected no error for --gui in non-GUI build, got: %v", err)
+	}
+}
+
 // TestQueryCmd_UsedFlag: vb disk --why --used → renders output and appends entry to USED.md.
 func TestQueryCmd_UsedFlag(t *testing.T) {
 	resetQueryFlags(t)

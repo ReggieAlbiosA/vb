@@ -18,6 +18,12 @@ var LensToFile = map[string]string{
 	"refs":       "REFS.md",
 }
 
+// RegisterCustomLens adds a user-defined lens to the LensToFile map.
+// This makes it visible to ResolveLens(), ActiveLens(), and IsReservedFlag().
+func RegisterCustomLens(flag, filename string) {
+	LensToFile[flag] = filename
+}
+
 // ResolveLens converts a CLI flag name to its vault filename.
 func ResolveLens(flag string) (string, error) {
 	file, exists := LensToFile[flag]

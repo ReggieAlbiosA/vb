@@ -35,6 +35,8 @@ func init() {
 	editCmd.Flags().BoolVar(&editFlagArch, "arch", false, "architecture overview")
 	editCmd.Flags().BoolVar(&editFlagGotchas, "gotchas", false, "gotchas and pitfalls")
 	editCmd.Flags().BoolVar(&editFlagRefs, "refs", false, "reference links")
+
+	registerCustomLenses(editCmd)
 }
 
 func runEdit(cmd *cobra.Command, args []string) error {

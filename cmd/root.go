@@ -12,6 +12,9 @@ var rootCmd = &cobra.Command{
 	Long: `vb is a terminal-native knowledge base.
 Store and query technical information through topic + lens combinations.
 
+Built-in lenses: --why, --importance, --cli-tools, --arch, --gotchas, --refs
+Create custom lenses: vb create <topic> -c "FILENAME.md"
+
 Run 'vb init' in your knowledge base directory to create a vault.`,
 }
 

@@ -39,6 +39,8 @@ func init() {
 	rootCmd.Flags().BoolVar(&flagGotchas, "gotchas", false, "gotchas and pitfalls")
 	rootCmd.Flags().BoolVar(&flagRefs, "refs", false, "reference links")
 	rootCmd.Flags().BoolVar(&flagGUI, "gui", false, "open in GUI viewer (modifier, not a lens)")
+
+	registerCustomLenses(rootCmd)
 }
 
 func runQuery(cmd *cobra.Command, args []string) error {

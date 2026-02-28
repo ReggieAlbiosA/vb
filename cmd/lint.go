@@ -34,6 +34,8 @@ func init() {
 	lintCmd.Flags().BoolVar(&lintFlagArch, "arch", false, "architecture overview")
 	lintCmd.Flags().BoolVar(&lintFlagGotchas, "gotchas", false, "gotchas and pitfalls")
 	lintCmd.Flags().BoolVar(&lintFlagRefs, "refs", false, "reference links")
+
+	registerCustomLenses(lintCmd)
 }
 
 func runLint(cmd *cobra.Command, args []string) error {
