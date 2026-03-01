@@ -79,13 +79,12 @@ func TestActiveLens_MultipleFlags(t *testing.T) {
 	}
 }
 
-func TestActiveLens_UsedNotALens(t *testing.T) {
+func TestActiveLens_UsedIsALens(t *testing.T) {
 	fs := pflag.NewFlagSet("test", pflag.ContinueOnError)
 	for name := range resolver.LensToFile {
 		fs.Bool(name, false, "")
 	}
-	fs.Bool("used", false, "")
-	if err := fs.Parse([]string{"--used", "--why"}); err != nil {
+	if err := fs.Parse([]string{"--used"}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -93,9 +92,8 @@ func TestActiveLens_UsedNotALens(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// --used is not in LensToFile — only --why must be returned.
-	if got != "why" {
-		t.Errorf("expected lens 'why' (--used ignored), got %q", got)
+	if got != "used" {
+		t.Errorf("expected lens 'used', got %q", got)
 	}
 }
 

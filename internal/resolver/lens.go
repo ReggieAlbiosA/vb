@@ -14,6 +14,7 @@ var LensToFile = map[string]string{
 	"importance": "IMPORTANCE.md",
 	"cli-tools":  "CLI_TOOLS.md",
 	"arch":       "ARCH.md",
+	"used":       "USED.md",
 	"gotchas":    "GOTCHAS.md",
 	"refs":       "REFS.md",
 }
