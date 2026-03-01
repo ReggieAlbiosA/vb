@@ -4,23 +4,40 @@ import (
 	"os"
 
 	"github.com/ReggieAlbiosA/vb/internal/config"
+	"github.com/ReggieAlbiosA/vb/internal/registry"
 	"github.com/ReggieAlbiosA/vb/internal/resolver"
 	"github.com/ReggieAlbiosA/vb/internal/vault"
 	"github.com/spf13/cobra"
 )
 
-// registerCustomLenses loads the vault config from cwd (best-effort) and
-// registers any custom lenses as boolean flags on the given command.
-// If not inside a vault, this silently does nothing.
+// registerCustomLenses loads the vault config (best-effort) and registers any
+// custom lenses as boolean flags on the given command.
+//
+// Resolution: cwd walk first, then default registry vault as fallback.
+// The --vault flag cannot be used here because Cobra's init() runs before
+// flag parsing.
 func registerCustomLenses(cmd *cobra.Command) {
+	// Try cwd walk first (backward-compatible).
 	cwd, err := os.Getwd()
 	if err != nil {
 		return
 	}
 
-	ctx, err := vault.Resolve(cwd)
-	if err != nil {
-		return // not inside a vault — skip
+	ctx, cwdErr := vault.Resolve(cwd)
+	if cwdErr != nil {
+		// Not inside a vault — try the default registry vault.
+		reg, regErr := registry.Load()
+		if regErr != nil || reg.Default == "" {
+			return
+		}
+		path, lookErr := reg.Lookup(reg.Default)
+		if lookErr != nil {
+			return
+		}
+		ctx, cwdErr = vault.Resolve(path)
+		if cwdErr != nil {
+			return
+		}
 	}
 
 	cfg, err := config.Load(ctx.VaultRoot)
