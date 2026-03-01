@@ -6,18 +6,13 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"net"
-	"net/http"
-	"os"
-	"os/exec"
-	"runtime"
 	"strings"
-	"sync"
 
 	"github.com/yuin/goldmark"
 )
 
-// htmlTemplate is the self-contained HTML page template for the webview.
+// htmlTemplate is the self-contained HTML page template for standalone rendering.
+// Kept for backward compatibility with buildHTML (used in tests).
 const htmlTemplate = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -123,57 +118,27 @@ func buildHTML(content []byte, lens string, theme string) (string, error) {
 	return buf.String(), nil
 }
 
-// htmlHandler returns an http.Handler that serves the HTML string and signals
-// done on the first request (via once) so openWindow knows the browser connected.
-func htmlHandler(html string, done chan struct{}) http.Handler {
-	var once sync.Once
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		fmt.Fprint(w, html)
-		once.Do(func() { close(done) })
-	})
-}
+// buildTabContent produces a TabData struct for a single tab, converting
+// raw Markdown content to inner HTML without a full page wrapper.
+func buildTabContent(content []byte, lens string, filename string, theme string) (TabData, error) {
+	mermaid := isMermaidFile(content)
 
-// openWindow launches a local HTTP server, opens the browser, and blocks until
-// the browser has fetched the page — preventing the process from exiting before
-// the server can serve the content.
-func openWindow(title, html string) error {
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return err
-	}
-
-	done := make(chan struct{})
-	addr := ln.Addr().String()
-	go http.Serve(ln, htmlHandler(html, done)) //nolint:errcheck
-
-	if err := launchBrowser("http://" + addr); err != nil {
-		return err
-	}
-
-	<-done // block until browser has fetched the page, then exit cleanly
-	return nil
-}
-
-// hasDisplay checks whether a graphical display is available on Linux.
-func hasDisplay() bool {
-	return os.Getenv("DISPLAY") != "" || os.Getenv("WAYLAND_DISPLAY") != ""
-}
-
-// launchBrowser opens the given URL in the system's default browser.
-// Returns an error if no display is available (headless) or the platform is unsupported.
-func launchBrowser(url string) error {
-	switch runtime.GOOS {
-	case "linux":
-		if !hasDisplay() {
-			return fmt.Errorf("no display available (DISPLAY and WAYLAND_DISPLAY unset)")
+	var bodyHTML string
+	if mermaid {
+		bodyHTML = string(content)
+	} else {
+		var err error
+		bodyHTML, err = markdownToHTML(content)
+		if err != nil {
+			return TabData{}, err
 		}
-		return exec.Command("xdg-open", url).Start()
-	case "darwin":
-		return exec.Command("open", url).Start()
-	case "windows":
-		return exec.Command("cmd", "/c", "start", url).Start()
-	default:
-		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
 	}
+
+	return TabData{
+		Title:     filename,
+		Lens:      lens,
+		BodyHTML:  bodyHTML,
+		IsMermaid: mermaid,
+		Theme:     theme,
+	}, nil
 }

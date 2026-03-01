@@ -49,7 +49,7 @@ func TestFile_GUIRendererFactory(t *testing.T) {
 
 	// Set a custom factory that returns TerminalRenderer (simulates stub build).
 	old := render.GUIRendererFactory
-	render.GUIRendererFactory = func() render.Renderer {
+	render.GUIRendererFactory = func(filename string) render.Renderer {
 		return &render.TerminalRenderer{}
 	}
 	t.Cleanup(func() { render.GUIRendererFactory = old })

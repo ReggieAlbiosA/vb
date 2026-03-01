@@ -12,7 +12,7 @@ func TestWebviewRenderer_FallbackOnHeadless(t *testing.T) {
 	t.Setenv("DISPLAY", "")
 	t.Setenv("WAYLAND_DISPLAY", "")
 
-	r := &WebviewRenderer{}
+	r := &WebviewRenderer{Filename: "WHY.md"}
 	content := []byte("# Why\n\nBecause it matters.")
 	out, err := r.Render(content, "why", "dark")
 	if err != nil {
@@ -52,5 +52,29 @@ func TestBuildHTML_MermaidContent(t *testing.T) {
 	}
 	if !strings.Contains(html, "mermaid") {
 		t.Error("expected HTML to include mermaid script reference")
+	}
+}
+
+func TestHasDisplay_NoDisplay(t *testing.T) {
+	t.Setenv("DISPLAY", "")
+	t.Setenv("WAYLAND_DISPLAY", "")
+	if hasDisplay() {
+		t.Error("expected false when no display vars set")
+	}
+}
+
+func TestHasDisplay_WithDisplay(t *testing.T) {
+	t.Setenv("DISPLAY", ":0")
+	t.Setenv("WAYLAND_DISPLAY", "")
+	if !hasDisplay() {
+		t.Error("expected true when DISPLAY is set")
+	}
+}
+
+func TestHasDisplay_WithWayland(t *testing.T) {
+	t.Setenv("DISPLAY", "")
+	t.Setenv("WAYLAND_DISPLAY", "wayland-0")
+	if !hasDisplay() {
+		t.Error("expected true when WAYLAND_DISPLAY is set")
 	}
 }

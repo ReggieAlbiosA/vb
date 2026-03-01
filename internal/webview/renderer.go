@@ -9,29 +9,45 @@ import (
 )
 
 func init() {
-	render.GUIRendererFactory = func() render.Renderer {
-		return &WebviewRenderer{}
+	render.GUIRendererFactory = func(filename string) render.Renderer {
+		return &WebviewRenderer{Filename: filename}
 	}
 }
 
-// WebviewRenderer satisfies render.Renderer by launching a webview window.
-type WebviewRenderer struct{}
+// WebviewRenderer satisfies render.Renderer by opening content in a native
+// webview window with tab support via IPC.
+type WebviewRenderer struct {
+	Filename string // e.g. "WHY.md" — used as tab title
+}
 
-// Render converts Markdown content to HTML and opens it in a webview window.
-// Falls back to terminal output if the display is unavailable.
+// Render converts Markdown content to HTML and opens it in a native webview.
+// If an existing vb GUI window is running, adds a tab via IPC and returns
+// immediately. Otherwise starts a new primary window (blocking until closed).
+// Falls back to terminal output if no display is available.
 func (r *WebviewRenderer) Render(content []byte, lens string, theme string) (string, error) {
-	html, err := buildHTML(content, lens, theme)
-	if err != nil {
-		return "", fmt.Errorf("building webview HTML: %w", err)
-	}
-
-	if err := openWindow(lens, html); err != nil {
-		// Graceful fallback: headless or display unavailable.
+	if !hasDisplay() {
 		t := &render.TerminalRenderer{}
 		return t.Render(content, lens, theme)
 	}
 
-	// Webview blocks until browser is opened — output handled by browser.
+	tab, err := buildTabContent(content, lens, r.Filename, theme)
+	if err != nil {
+		return "", fmt.Errorf("building tab content: %w", err)
+	}
+
+	// Try to send tab to an existing window via IPC.
+	if err := tryIPCSend(tab); err == nil {
+		// Tab added to existing window — exit immediately.
+		return "", nil
+	}
+
+	// No existing window — become the primary window (blocks until closed).
+	if err := startPrimaryWindow(tab); err != nil {
+		// Graceful fallback: display issue at runtime.
+		t := &render.TerminalRenderer{}
+		return t.Render(content, lens, theme)
+	}
+
 	return "", nil
 }
 

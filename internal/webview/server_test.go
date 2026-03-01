@@ -3,8 +3,6 @@
 package webview
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -28,44 +26,6 @@ func TestMarkdownToHTML_Empty(t *testing.T) {
 	}
 	if html != "" {
 		t.Errorf("expected empty HTML for empty input, got: %s", html)
-	}
-}
-
-func TestHtmlHandler_ServesContent(t *testing.T) {
-	handler := htmlHandler("<h1>Test</h1>")
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Errorf("expected status 200, got %d", rec.Code)
-	}
-	if ct := rec.Header().Get("Content-Type"); !strings.Contains(ct, "text/html") {
-		t.Errorf("expected text/html content type, got %q", ct)
-	}
-	if !strings.Contains(rec.Body.String(), "<h1>Test</h1>") {
-		t.Errorf("expected body to contain <h1>Test</h1>, got: %s", rec.Body.String())
-	}
-}
-
-func TestOpenWindow_ListenFails(t *testing.T) {
-	// Force headless to test the fallback path in openWindow.
-	t.Setenv("DISPLAY", "")
-	t.Setenv("WAYLAND_DISPLAY", "")
-
-	err := openWindow("test", "<html></html>")
-	if err == nil {
-		t.Error("expected error in headless environment, got nil")
-	}
-}
-
-func TestLaunchBrowser_NoDisplay(t *testing.T) {
-	t.Setenv("DISPLAY", "")
-	t.Setenv("WAYLAND_DISPLAY", "")
-
-	err := launchBrowser("http://127.0.0.1:0")
-	if err == nil {
-		t.Error("expected error when DISPLAY is unset")
 	}
 }
 
@@ -130,45 +90,60 @@ func TestBuildHTML_MermaidPie(t *testing.T) {
 }
 
 func TestInitRegistersFactory(t *testing.T) {
-	// The init() in renderer.go registers GUIRendererFactory.
-	// Calling the factory exercises the inner closure.
-	r := render.GUIRendererFactory()
-	if _, ok := r.(*WebviewRenderer); !ok {
-		t.Errorf("expected *WebviewRenderer from GUIRendererFactory, got %T", r)
+	// The init() in renderer.go registers GUIRendererFactory with filename param.
+	r := render.GUIRendererFactory("WHY.md")
+	wr, ok := r.(*WebviewRenderer)
+	if !ok {
+		t.Fatalf("expected *WebviewRenderer from GUIRendererFactory, got %T", r)
+	}
+	if wr.Filename != "WHY.md" {
+		t.Errorf("expected Filename 'WHY.md', got %q", wr.Filename)
 	}
 }
 
-func TestHasDisplay_NoDisplay(t *testing.T) {
-	t.Setenv("DISPLAY", "")
-	t.Setenv("WAYLAND_DISPLAY", "")
-	if hasDisplay() {
-		t.Error("expected false when no display vars set")
+func TestBuildTabContent_Markdown(t *testing.T) {
+	content := []byte("# Hello\n\nWorld.")
+	tab, err := buildTabContent(content, "why", "WHY.md", "dark")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if tab.Title != "WHY.md" {
+		t.Errorf("expected title WHY.md, got %q", tab.Title)
+	}
+	if tab.Lens != "why" {
+		t.Errorf("expected lens why, got %q", tab.Lens)
+	}
+	if tab.IsMermaid {
+		t.Error("expected IsMermaid=false for markdown content")
+	}
+	if !strings.Contains(tab.BodyHTML, "<h1>Hello</h1>") {
+		t.Errorf("expected rendered markdown HTML, got %q", tab.BodyHTML)
+	}
+	if tab.Theme != "dark" {
+		t.Errorf("expected theme dark, got %q", tab.Theme)
 	}
 }
 
-func TestHasDisplay_WithDisplay(t *testing.T) {
-	t.Setenv("DISPLAY", ":0")
-	t.Setenv("WAYLAND_DISPLAY", "")
-	if !hasDisplay() {
-		t.Error("expected true when DISPLAY is set")
+func TestBuildTabContent_Mermaid(t *testing.T) {
+	content := []byte("graph TD\n  A-->B")
+	tab, err := buildTabContent(content, "arch", "ARCH.mmd", "dark")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !tab.IsMermaid {
+		t.Error("expected IsMermaid=true for mermaid content")
+	}
+	if tab.BodyHTML != string(content) {
+		t.Errorf("expected raw mermaid content, got %q", tab.BodyHTML)
 	}
 }
 
-func TestHasDisplay_WithWayland(t *testing.T) {
-	t.Setenv("DISPLAY", "")
-	t.Setenv("WAYLAND_DISPLAY", "wayland-0")
-	if !hasDisplay() {
-		t.Error("expected true when WAYLAND_DISPLAY is set")
+func TestBuildTabContent_Empty(t *testing.T) {
+	tab, err := buildTabContent([]byte{}, "why", "WHY.md", "dark")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
-}
-
-func TestLaunchBrowser_WithFakeDisplay(t *testing.T) {
-	// Set DISPLAY so the display check passes, but use a bogus display
-	// that won't actually open a browser window.
-	t.Setenv("DISPLAY", ":99")
-	t.Setenv("WAYLAND_DISPLAY", "")
-
-	// xdg-open will be started but won't successfully open anything with :99.
-	// We just care that the code path is exercised (Start() returns nil or error).
-	_ = launchBrowser("http://127.0.0.1:0")
+	if tab.BodyHTML != "" {
+		t.Errorf("expected empty body for empty content, got %q", tab.BodyHTML)
+	}
 }
