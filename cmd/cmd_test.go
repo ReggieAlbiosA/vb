@@ -7,8 +7,19 @@ import (
 	"testing"
 )
 
+// isolateRegistry sets XDG_CONFIG_HOME to a temp dir so tests never touch
+// the real ~/.config/vb/vaults.json. Returns the isolated config dir.
+// Call this ONCE at the start of each test function.
+func isolateRegistry(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	return dir
+}
+
 // execCmd runs the root cobra command with the given args from a specific directory.
 // It returns the combined stdout/stderr output and any error.
+// Callers MUST call isolateRegistry(t) before using this helper.
 func execCmd(t *testing.T, dir string, args ...string) (string, error) {
 	t.Helper()
 
@@ -35,6 +46,7 @@ func execCmd(t *testing.T, dir string, args ...string) (string, error) {
 
 // TestInitCmd_Success: vb init creates .vb/, config.toml, and index.json.
 func TestInitCmd_Success(t *testing.T) {
+	isolateRegistry(t)
 	dir := t.TempDir()
 
 	_, err := execCmd(t, dir, "init")
@@ -56,6 +68,7 @@ func TestInitCmd_Success(t *testing.T) {
 
 // TestInitCmd_AlreadyInitialized: vb init errors when .vb/ already exists.
 func TestInitCmd_AlreadyInitialized(t *testing.T) {
+	isolateRegistry(t)
 	dir := t.TempDir()
 
 	// First init.
@@ -72,6 +85,7 @@ func TestInitCmd_AlreadyInitialized(t *testing.T) {
 
 // TestReindexCmd_Success: vb reindex indexes topics and reports count.
 func TestReindexCmd_Success(t *testing.T) {
+	isolateRegistry(t)
 	dir := t.TempDir()
 
 	// Init vault.
@@ -106,6 +120,7 @@ func TestReindexCmd_Success(t *testing.T) {
 
 // TestReindexCmd_NoVault: vb reindex errors when run outside any vault.
 func TestReindexCmd_NoVault(t *testing.T) {
+	isolateRegistry(t)
 	// Use an isolated temp dir with no .vb/ marker.
 	dir := t.TempDir()
 	emptyDir := filepath.Join(dir, "no-vault")

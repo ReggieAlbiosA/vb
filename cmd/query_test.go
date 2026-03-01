@@ -11,7 +11,7 @@ import (
 func resetQueryFlags(t *testing.T) {
 	t.Helper()
 	t.Cleanup(func() {
-		for _, name := range []string{"why", "importance", "cli-tools", "arch", "used", "gotchas", "refs", "gui"} {
+		for _, name := range []string{"why", "importance", "cli-tools", "arch", "used", "gotchas", "refs", "gui", "mermaid"} {
 			if f := rootCmd.Flags().Lookup(name); f != nil {
 				f.Changed = false
 				f.Value.Set("false") //nolint:errcheck
@@ -46,6 +46,7 @@ func setupVaultWithTopic(t *testing.T) string {
 
 // TestQueryCmd_Success: vb disk --why with authored file → no error.
 func TestQueryCmd_Success(t *testing.T) {
+	isolateRegistry(t)
 	resetQueryFlags(t)
 	dir := setupVaultWithTopic(t)
 
@@ -57,6 +58,7 @@ func TestQueryCmd_Success(t *testing.T) {
 
 // TestQueryCmd_TopicNotFound: vb unknown --why → error.
 func TestQueryCmd_TopicNotFound(t *testing.T) {
+	isolateRegistry(t)
 	resetQueryFlags(t)
 	dir := setupVaultWithTopic(t)
 
@@ -68,6 +70,7 @@ func TestQueryCmd_TopicNotFound(t *testing.T) {
 
 // TestQueryCmd_LensFileMissing: vb disk --why with no WHY.md → user-readable error.
 func TestQueryCmd_LensFileMissing(t *testing.T) {
+	isolateRegistry(t)
 	resetQueryFlags(t)
 	dir := t.TempDir()
 
@@ -96,6 +99,7 @@ func TestQueryCmd_LensFileMissing(t *testing.T) {
 
 // TestQueryCmd_NoLens: vb disk (no flag) → error.
 func TestQueryCmd_NoLens(t *testing.T) {
+	isolateRegistry(t)
 	resetQueryFlags(t)
 	dir := setupVaultWithTopic(t)
 
@@ -107,6 +111,7 @@ func TestQueryCmd_NoLens(t *testing.T) {
 
 // TestQueryCmd_GUIModifier: vb disk --why --gui → resolves without error.
 func TestQueryCmd_GUIModifier(t *testing.T) {
+	isolateRegistry(t)
 	resetQueryFlags(t)
 	dir := setupVaultWithTopic(t)
 
@@ -116,23 +121,86 @@ func TestQueryCmd_GUIModifier(t *testing.T) {
 	}
 }
 
-// TestQueryCmd_UsedFlag: vb disk --why --used → renders output and appends entry to USED.md.
-func TestQueryCmd_UsedFlag(t *testing.T) {
+// TestQueryCmd_GUIFlag_NonGUIBuild: --gui in non-GUI build → terminal output, no error.
+func TestQueryCmd_GUIFlag_NonGUIBuild(t *testing.T) {
+	isolateRegistry(t)
 	resetQueryFlags(t)
 	dir := setupVaultWithTopic(t)
 
-	_, err := execCmd(t, dir, "disk", "--why", "--used")
+	// In non-GUI builds, GUIRendererFactory is nil, so gui=true falls through to terminal.
+	_, err := execCmd(t, dir, "disk", "--why", "--gui")
 	if err != nil {
-		t.Fatalf("vb disk --why --used: %v", err)
+		t.Fatalf("expected no error for --gui in non-GUI build, got: %v", err)
+	}
+}
+
+// TestQueryCmd_MermaidModifier: vb disk --arch --mermaid → resolves ARCH.mmd.
+func TestQueryCmd_MermaidModifier(t *testing.T) {
+	isolateRegistry(t)
+	resetQueryFlags(t)
+	dir := setupVaultWithTopic(t)
+
+	// Create ARCH.mmd in the topic directory.
+	archPath := filepath.Join(dir, "hardware", "disk", "ARCH.mmd")
+	if err := os.WriteFile(archPath, []byte("graph TD\n  A-->B"), 0644); err != nil {
+		t.Fatal(err)
 	}
 
-	// USED.md must exist inside the topic directory.
-	usedPath := filepath.Join(dir, "hardware", "disk", "USED.md")
-	data, readErr := os.ReadFile(usedPath)
-	if readErr != nil {
-		t.Fatalf("USED.md not created: %v", readErr)
+	_, err := execCmd(t, dir, "disk", "--arch", "--mermaid")
+	if err != nil {
+		t.Fatalf("vb disk --arch --mermaid: %v", err)
 	}
-	if len(data) == 0 {
-		t.Error("USED.md is empty — expected at least one log entry")
+}
+
+// TestQueryCmd_MermaidModifier_Short: vb disk --arch -m → same as --mermaid.
+func TestQueryCmd_MermaidModifier_Short(t *testing.T) {
+	isolateRegistry(t)
+	resetQueryFlags(t)
+	dir := setupVaultWithTopic(t)
+
+	archPath := filepath.Join(dir, "hardware", "disk", "ARCH.mmd")
+	if err := os.WriteFile(archPath, []byte("graph TD\n  A-->B"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := execCmd(t, dir, "disk", "--arch", "-m")
+	if err != nil {
+		t.Fatalf("vb disk --arch -m: %v", err)
+	}
+}
+
+// TestQueryCmd_MermaidModifier_NoFile: vb disk --arch --mermaid without .mmd file → error.
+func TestQueryCmd_MermaidModifier_NoFile(t *testing.T) {
+	isolateRegistry(t)
+	resetQueryFlags(t)
+	dir := setupVaultWithTopic(t)
+
+	// Create ARCH.md only — no ARCH.mmd.
+	archPath := filepath.Join(dir, "hardware", "disk", "ARCH.md")
+	if err := os.WriteFile(archPath, []byte("# Arch"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := execCmd(t, dir, "disk", "--arch", "--mermaid")
+	if err == nil {
+		t.Fatal("expected error for missing ARCH.mmd, got nil")
+	}
+}
+
+// TestQueryCmd_UsedLens: vb disk --used → renders USED.md as a proper lens.
+func TestQueryCmd_UsedLens(t *testing.T) {
+	isolateRegistry(t)
+	resetQueryFlags(t)
+	dir := setupVaultWithTopic(t)
+
+	// Create a USED.md with a saved command entry.
+	usedPath := filepath.Join(dir, "hardware", "disk", "USED.md")
+	if err := os.WriteFile(usedPath, []byte("- lsblk — show all block devices\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := execCmd(t, dir, "disk", "--used")
+	if err != nil {
+		t.Fatalf("vb disk --used: %v", err)
 	}
 }

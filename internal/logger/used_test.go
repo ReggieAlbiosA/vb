@@ -5,13 +5,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
 
-func TestAppend_CreatesFile(t *testing.T) {
+func TestSave_CreatesFile(t *testing.T) {
 	dir := t.TempDir()
 
-	if err := Append(dir, "disk", "why"); err != nil {
+	if err := Save(dir, "lsblk", "show all block devices"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -20,13 +19,13 @@ func TestAppend_CreatesFile(t *testing.T) {
 	}
 }
 
-func TestAppend_AppendsNotOverwrites(t *testing.T) {
+func TestSave_AppendsNotOverwrites(t *testing.T) {
 	dir := t.TempDir()
 
-	if err := Append(dir, "disk", "why"); err != nil {
+	if err := Save(dir, "lsblk", "show all block devices"); err != nil {
 		t.Fatal(err)
 	}
-	if err := Append(dir, "disk", "arch"); err != nil {
+	if err := Save(dir, "df -h", "check disk usage"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -36,18 +35,18 @@ func TestAppend_AppendsNotOverwrites(t *testing.T) {
 	}
 
 	content := string(data)
-	if !strings.Contains(content, "--why") {
-		t.Error("first entry (--why) was overwritten")
+	if !strings.Contains(content, "lsblk") {
+		t.Error("first entry (lsblk) was overwritten")
 	}
-	if !strings.Contains(content, "--arch") {
-		t.Error("second entry (--arch) is missing")
+	if !strings.Contains(content, "df -h") {
+		t.Error("second entry (df -h) is missing")
 	}
 }
 
-func TestAppend_EntryFormat(t *testing.T) {
+func TestSave_Format(t *testing.T) {
 	dir := t.TempDir()
 
-	if err := Append(dir, "disk", "why"); err != nil {
+	if err := Save(dir, "sudo parted -l", "list all partition tables"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -57,28 +56,13 @@ func TestAppend_EntryFormat(t *testing.T) {
 	}
 
 	line := strings.TrimSpace(string(data))
-	if !strings.HasPrefix(line, "- ") {
-		t.Errorf("entry does not start with '- ': %q", line)
-	}
-	if !strings.Contains(line, "vb disk --why") {
-		t.Errorf("entry missing 'vb disk --why': %q", line)
-	}
-	if !strings.Contains(line, "UTC") {
-		t.Errorf("entry missing 'UTC' timestamp: %q", line)
+	want := "- sudo parted -l — list all partition tables"
+	if line != want {
+		t.Errorf("entry = %q, want %q", line, want)
 	}
 }
 
-func TestFormatEntry_Timestamp(t *testing.T) {
-	ts, _ := time.Parse("2006-01-02 15:04 UTC", "2026-02-27 14:01 UTC")
-	e := Entry{Timestamp: ts, Topic: "disk", Lens: "why"}
-	got := formatEntry(e)
-	want := "- 2026-02-27 14:01 UTC  vb disk --why"
-	if got != want {
-		t.Errorf("formatEntry() = %q, want %q", got, want)
-	}
-}
-
-func TestAppend_WriteError(t *testing.T) {
+func TestSave_WriteError(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create a directory named USED.md so os.OpenFile fails.
@@ -86,7 +70,7 @@ func TestAppend_WriteError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := Append(dir, "disk", "why")
+	err := Save(dir, "lsblk", "show block devices")
 	if err == nil {
 		t.Fatal("expected error when USED.md is a directory, got nil")
 	}

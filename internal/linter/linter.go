@@ -23,7 +23,7 @@ func Lint(filePath, lens string) ([]LintError, error) {
 		return nil, nil
 	}
 
-	// Parse to AST using Goldmark. No rendering — structural inspection only.
+	// Parse to AST using Goldmark. No ring — structural inspection only.
 	md := goldmark.New()
 	doc := md.Parser().Parse(text.NewReader(content))
 

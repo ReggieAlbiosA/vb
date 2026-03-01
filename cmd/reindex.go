@@ -2,10 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/ReggieAlbiosA/vb/internal/index"
-	"github.com/ReggieAlbiosA/vb/internal/vault"
 	"github.com/spf13/cobra"
 )
 
@@ -21,13 +19,8 @@ Run this after adding, renaming, or removing topic folders.`,
 }
 
 func runReindex(cmd *cobra.Command, args []string) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("cannot determine current directory: %w", err)
-	}
-
-	// Two-stage vault resolution.
-	ctx, err := vault.Resolve(cwd)
+	// Vault resolution: --vault flag → cwd walk → default registry vault.
+	ctx, err := resolveVault()
 	if err != nil {
 		return err
 	}

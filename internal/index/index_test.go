@@ -54,14 +54,21 @@ func TestBuild_WithTopics(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build() error: %v", err)
 	}
-	if len(schema.Topics) != 2 {
-		t.Errorf("Topics: got %d, want 2. Topics: %v", len(schema.Topics), schema.Topics)
+	// 2 leaf keys + 2 ..-joined keys = 4.
+	if len(schema.Topics) != 4 {
+		t.Errorf("Topics: got %d, want 4. Topics: %v", len(schema.Topics), schema.Topics)
 	}
 	if schema.Topics["disk"] != "hardware/disk" {
 		t.Errorf("disk path: got %q, want %q", schema.Topics["disk"], "hardware/disk")
 	}
+	if schema.Topics["hardware..disk"] != "hardware/disk" {
+		t.Errorf("hardware..disk path: got %q, want %q", schema.Topics["hardware..disk"], "hardware/disk")
+	}
 	if schema.Topics["ssh"] != "networking/ssh" {
 		t.Errorf("ssh path: got %q, want %q", schema.Topics["ssh"], "networking/ssh")
+	}
+	if schema.Topics["networking..ssh"] != "networking/ssh" {
+		t.Errorf("networking..ssh path: got %q, want %q", schema.Topics["networking..ssh"], "networking/ssh")
 	}
 }
 
@@ -79,8 +86,9 @@ func TestBuild_SkipsVbDir(t *testing.T) {
 	if _, ok := schema.Topics[".vb"]; ok {
 		t.Error("Topics: .vb/ was indexed — it must always be skipped")
 	}
-	if len(schema.Topics) != 1 {
-		t.Errorf("Topics: got %d, want 1", len(schema.Topics))
+	// 1 leaf key + 1 ..-joined key = 2.
+	if len(schema.Topics) != 2 {
+		t.Errorf("Topics: got %d, want 2", len(schema.Topics))
 	}
 }
 
@@ -202,5 +210,61 @@ func TestLoad_MalformedJSON(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "parsing index.json") {
 		t.Errorf("Load() error message: got %q, want it to contain 'parsing index.json'", err.Error())
+	}
+}
+
+// TestBuild_DualKey: nested topic generates both leaf key and ..-joined key.
+func TestBuild_DualKey(t *testing.T) {
+	vaultRoot := mkVaultDir(t)
+	writeFile(t, filepath.Join(vaultRoot, "partition", "fs", "WHY.md"), "")
+
+	schema, err := index.Build(vaultRoot, vaultRoot)
+	if err != nil {
+		t.Fatalf("Build() error: %v", err)
+	}
+
+	// Leaf key.
+	if schema.Topics["fs"] != "partition/fs" {
+		t.Errorf("leaf key: got %q, want %q", schema.Topics["fs"], "partition/fs")
+	}
+	// ..-joined key.
+	if schema.Topics["partition..fs"] != "partition/fs" {
+		t.Errorf("dotdot key: got %q, want %q", schema.Topics["partition..fs"], "partition/fs")
+	}
+}
+
+// TestBuild_DualKey_TopLevel: top-level topic only has leaf key, no ..-joined duplicate.
+func TestBuild_DualKey_TopLevel(t *testing.T) {
+	vaultRoot := mkVaultDir(t)
+	writeFile(t, filepath.Join(vaultRoot, "disk", "WHY.md"), "")
+
+	schema, err := index.Build(vaultRoot, vaultRoot)
+	if err != nil {
+		t.Fatalf("Build() error: %v", err)
+	}
+
+	if len(schema.Topics) != 1 {
+		t.Errorf("Topics: got %d, want 1 (no ..-joined duplicate for top-level). Topics: %v", len(schema.Topics), schema.Topics)
+	}
+	if schema.Topics["disk"] != "disk" {
+		t.Errorf("disk path: got %q, want %q", schema.Topics["disk"], "disk")
+	}
+}
+
+// TestBuild_DualKey_Deep: deeply nested topic generates ..-joined key.
+func TestBuild_DualKey_Deep(t *testing.T) {
+	vaultRoot := mkVaultDir(t)
+	writeFile(t, filepath.Join(vaultRoot, "partition", "fs", "mnt", "WHY.md"), "")
+
+	schema, err := index.Build(vaultRoot, vaultRoot)
+	if err != nil {
+		t.Fatalf("Build() error: %v", err)
+	}
+
+	if schema.Topics["mnt"] != "partition/fs/mnt" {
+		t.Errorf("leaf key: got %q, want %q", schema.Topics["mnt"], "partition/fs/mnt")
+	}
+	if schema.Topics["partition..fs..mnt"] != "partition/fs/mnt" {
+		t.Errorf("dotdot key: got %q, want %q", schema.Topics["partition..fs..mnt"], "partition/fs/mnt")
 	}
 }

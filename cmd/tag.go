@@ -2,10 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/ReggieAlbiosA/vb/internal/tagger"
-	"github.com/ReggieAlbiosA/vb/internal/vault"
 	"github.com/spf13/cobra"
 )
 
@@ -19,12 +17,7 @@ var tagCmd = &cobra.Command{
 func runTag(cmd *cobra.Command, args []string) error {
 	tagName := args[0]
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	ctx, err := vault.Resolve(cwd)
+	ctx, err := resolveVault()
 	if err != nil {
 		return err
 	}

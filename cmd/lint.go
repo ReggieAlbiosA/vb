@@ -2,12 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/ReggieAlbiosA/vb/internal/index"
 	"github.com/ReggieAlbiosA/vb/internal/linter"
 	"github.com/ReggieAlbiosA/vb/internal/resolver"
-	"github.com/ReggieAlbiosA/vb/internal/vault"
 	"github.com/spf13/cobra"
 )
 
@@ -34,6 +32,8 @@ func init() {
 	lintCmd.Flags().BoolVar(&lintFlagArch, "arch", false, "architecture overview")
 	lintCmd.Flags().BoolVar(&lintFlagGotchas, "gotchas", false, "gotchas and pitfalls")
 	lintCmd.Flags().BoolVar(&lintFlagRefs, "refs", false, "reference links")
+
+	registerCustomLenses(lintCmd)
 }
 
 func runLint(cmd *cobra.Command, args []string) error {
@@ -44,12 +44,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	ctx, err := vault.Resolve(cwd)
+	ctx, err := resolveVault()
 	if err != nil {
 		return err
 	}

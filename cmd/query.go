@@ -2,14 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"os"
+	"strings"
 
 	"github.com/ReggieAlbiosA/vb/internal/config"
 	"github.com/ReggieAlbiosA/vb/internal/index"
-	"github.com/ReggieAlbiosA/vb/internal/logger"
 	"github.com/ReggieAlbiosA/vb/internal/render"
 	"github.com/ReggieAlbiosA/vb/internal/resolver"
-	"github.com/ReggieAlbiosA/vb/internal/vault"
 	"github.com/spf13/cobra"
 )
 
@@ -18,10 +16,11 @@ var (
 	flagImportance bool
 	flagCLITools   bool
 	flagArch       bool
-	flagUsed       bool
+	flagUsed       bool // used as lens flag (LensToFile), no longer a modifier
 	flagGotchas    bool
 	flagRefs       bool
-	flagGUI        bool
+	flagGUI     bool
+	flagMermaid bool
 )
 
 func init() {
@@ -35,10 +34,13 @@ func init() {
 	rootCmd.Flags().BoolVar(&flagImportance, "importance", false, "importance and impact of this topic")
 	rootCmd.Flags().BoolVar(&flagCLITools, "cli-tools", false, "CLI tools for this topic")
 	rootCmd.Flags().BoolVar(&flagArch, "arch", false, "architecture overview")
-	rootCmd.Flags().BoolVar(&flagUsed, "used", false, "log this query to USED.md")
+	rootCmd.Flags().BoolVar(&flagUsed, "used", false, "saved commands for this topic")
 	rootCmd.Flags().BoolVar(&flagGotchas, "gotchas", false, "gotchas and pitfalls")
 	rootCmd.Flags().BoolVar(&flagRefs, "refs", false, "reference links")
 	rootCmd.Flags().BoolVar(&flagGUI, "gui", false, "open in GUI viewer (modifier, not a lens)")
+	rootCmd.Flags().BoolVarP(&flagMermaid, "mermaid", "m", false, "render mermaid (.mmd) instead of markdown (modifier, not a lens)")
+
+	registerCustomLenses(rootCmd)
 }
 
 func runQuery(cmd *cobra.Command, args []string) error {
@@ -56,13 +58,8 @@ func runQuery(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("cannot determine current directory: %w", err)
-	}
-
-	// Two-stage vault resolution (Phase 01).
-	ctx, err := vault.Resolve(cwd)
+	// Vault resolution: --vault flag → cwd walk → default registry vault.
+	ctx, err := resolveVault()
 	if err != nil {
 		return err
 	}
@@ -91,20 +88,17 @@ func runQuery(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// --mermaid modifier: swap .md → .mmd for mermaid rendering.
+	if flagMermaid && strings.HasSuffix(lensFile, ".md") {
+		lensFile = strings.TrimSuffix(lensFile, ".md") + ".mmd"
+	}
+
 	// Validate file exists.
 	filePath, err := resolver.Bind(topicDir, lensFile)
 	if err != nil {
 		return err
 	}
 
-	// Hand off to renderer (Phase 03), passing lens, flagGUI, and theme.
-	if err := render.File(filePath, lens, flagGUI, cfg.Theme); err != nil {
-		return err
-	}
-
-	// Log to USED.md if --used flag is set (Phase 04).
-	if flagUsed {
-		return logger.Append(topicDir, topic, lens)
-	}
-	return nil
+	// Hand off to renderer, passing lens, flagGUI, and theme.
+	return render.File(filePath, lens, flagGUI, cfg.Theme)
 }

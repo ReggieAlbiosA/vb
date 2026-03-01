@@ -36,6 +36,7 @@ func setupVaultWithTag(t *testing.T, tag string) string {
 
 // TestTagCmd_Found: vb tag ssh with matching topic → result printed.
 func TestTagCmd_Found(t *testing.T) {
+	isolateRegistry(t)
 	dir := setupVaultWithTag(t, "ssh")
 
 	out, err := execCmd(t, dir, "tag", "ssh")
@@ -49,6 +50,7 @@ func TestTagCmd_Found(t *testing.T) {
 
 // TestTagCmd_NotFound: unknown tag → "no topics tagged" message, exit 0.
 func TestTagCmd_NotFound(t *testing.T) {
+	isolateRegistry(t)
 	dir := setupVaultWithTag(t, "ssh")
 
 	out, err := execCmd(t, dir, "tag", "unknowntag99")
@@ -62,6 +64,7 @@ func TestTagCmd_NotFound(t *testing.T) {
 
 // TestTagCmd_NoArg: no argument → cobra argument validation error.
 func TestTagCmd_NoArg(t *testing.T) {
+	isolateRegistry(t)
 	dir := setupVaultWithTag(t, "ssh")
 
 	_, err := execCmd(t, dir, "tag")

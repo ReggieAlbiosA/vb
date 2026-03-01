@@ -50,6 +50,12 @@ func Build(vaultRoot, topicRoot string) (Schema, error) {
 			// Topic name is the leaf directory name.
 			topicName := d.Name()
 			schema.Topics[topicName] = rel
+
+			// Add ..-joined key for explicit nested addressing.
+			dotDotKey := strings.ReplaceAll(rel, "/", "..")
+			if dotDotKey != topicName {
+				schema.Topics[dotDotKey] = rel
+			}
 		}
 		return nil
 	})
