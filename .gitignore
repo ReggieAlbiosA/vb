@@ -1,11 +1,16 @@
 # Build output
 vb
+vb-gui
 vb.exe
 vb-linux-amd64
 vb-darwin-amd64
 vb-darwin-arm64
 vb-windows-amd64.exe
 dist/
+
+# Generated at release time
+completions/
+man/
 
 # Go test artifacts
 *.test
