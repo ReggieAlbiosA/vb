@@ -8,7 +8,6 @@ import (
 	"github.com/ReggieAlbiosA/vb/internal/config"
 	"github.com/ReggieAlbiosA/vb/internal/index"
 	"github.com/ReggieAlbiosA/vb/internal/resolver"
-	"github.com/ReggieAlbiosA/vb/internal/vault"
 	"github.com/spf13/cobra"
 )
 
@@ -53,12 +52,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	// 4. Resolve vault + topic.
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("cannot determine current directory: %w", err)
-	}
-
-	ctx, err := vault.Resolve(cwd)
+	ctx, err := resolveVault()
 	if err != nil {
 		return err
 	}

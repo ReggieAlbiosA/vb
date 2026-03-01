@@ -1,14 +1,12 @@
 package cmd
 
 import (
-	"os"
 	"path/filepath"
 
 	"github.com/ReggieAlbiosA/vb/internal/config"
 	"github.com/ReggieAlbiosA/vb/internal/editor"
 	"github.com/ReggieAlbiosA/vb/internal/index"
 	"github.com/ReggieAlbiosA/vb/internal/resolver"
-	"github.com/ReggieAlbiosA/vb/internal/vault"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +15,7 @@ var (
 	editFlagImportance bool
 	editFlagCLITools   bool
 	editFlagArch       bool
+	editFlagUsed       bool
 	editFlagGotchas    bool
 	editFlagRefs       bool
 )
@@ -33,6 +32,7 @@ func init() {
 	editCmd.Flags().BoolVar(&editFlagImportance, "importance", false, "importance and impact of this topic")
 	editCmd.Flags().BoolVar(&editFlagCLITools, "cli-tools", false, "CLI tools for this topic")
 	editCmd.Flags().BoolVar(&editFlagArch, "arch", false, "architecture overview")
+	editCmd.Flags().BoolVar(&editFlagUsed, "used", false, "saved commands for this topic")
 	editCmd.Flags().BoolVar(&editFlagGotchas, "gotchas", false, "gotchas and pitfalls")
 	editCmd.Flags().BoolVar(&editFlagRefs, "refs", false, "reference links")
 
@@ -47,12 +47,7 @@ func runEdit(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	ctx, err := vault.Resolve(cwd)
+	ctx, err := resolveVault()
 	if err != nil {
 		return err
 	}
