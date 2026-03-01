@@ -32,6 +32,7 @@ func setVaultEditor(t *testing.T, vaultRoot, editorBin string) {
 
 // TestEditCmd_Success: vb edit disk --why with existing topic + WHY.md → no error.
 func TestEditCmd_Success(t *testing.T) {
+	isolateRegistry(t)
 	resetEditFlags(t)
 	dir := setupVaultWithTopic(t)
 	setVaultEditor(t, dir, "true") // "true" exits 0 immediately
@@ -44,6 +45,7 @@ func TestEditCmd_Success(t *testing.T) {
 
 // TestEditCmd_TopicNotFound: unknown topic → ErrTopicNotFound.
 func TestEditCmd_TopicNotFound(t *testing.T) {
+	isolateRegistry(t)
 	resetEditFlags(t)
 	dir := setupVaultWithTopic(t)
 	setVaultEditor(t, dir, "true")
@@ -56,6 +58,7 @@ func TestEditCmd_TopicNotFound(t *testing.T) {
 
 // TestEditCmd_NoLens: no lens flag → ErrNoLens.
 func TestEditCmd_NoLens(t *testing.T) {
+	isolateRegistry(t)
 	resetEditFlags(t)
 	dir := setupVaultWithTopic(t)
 	setVaultEditor(t, dir, "true")
@@ -68,6 +71,7 @@ func TestEditCmd_NoLens(t *testing.T) {
 
 // TestEditCmd_CreatesLensFile: vb edit disk --arch with no ARCH.md → creates file, opens editor.
 func TestEditCmd_CreatesLensFile(t *testing.T) {
+	isolateRegistry(t)
 	resetEditFlags(t)
 	dir := setupVaultWithTopic(t) // only WHY.md exists
 	setVaultEditor(t, dir, "true")

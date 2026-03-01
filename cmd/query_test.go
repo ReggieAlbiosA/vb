@@ -46,6 +46,7 @@ func setupVaultWithTopic(t *testing.T) string {
 
 // TestQueryCmd_Success: vb disk --why with authored file → no error.
 func TestQueryCmd_Success(t *testing.T) {
+	isolateRegistry(t)
 	resetQueryFlags(t)
 	dir := setupVaultWithTopic(t)
 
@@ -57,6 +58,7 @@ func TestQueryCmd_Success(t *testing.T) {
 
 // TestQueryCmd_TopicNotFound: vb unknown --why → error.
 func TestQueryCmd_TopicNotFound(t *testing.T) {
+	isolateRegistry(t)
 	resetQueryFlags(t)
 	dir := setupVaultWithTopic(t)
 
@@ -68,6 +70,7 @@ func TestQueryCmd_TopicNotFound(t *testing.T) {
 
 // TestQueryCmd_LensFileMissing: vb disk --why with no WHY.md → user-readable error.
 func TestQueryCmd_LensFileMissing(t *testing.T) {
+	isolateRegistry(t)
 	resetQueryFlags(t)
 	dir := t.TempDir()
 
@@ -96,6 +99,7 @@ func TestQueryCmd_LensFileMissing(t *testing.T) {
 
 // TestQueryCmd_NoLens: vb disk (no flag) → error.
 func TestQueryCmd_NoLens(t *testing.T) {
+	isolateRegistry(t)
 	resetQueryFlags(t)
 	dir := setupVaultWithTopic(t)
 
@@ -107,6 +111,7 @@ func TestQueryCmd_NoLens(t *testing.T) {
 
 // TestQueryCmd_GUIModifier: vb disk --why --gui → resolves without error.
 func TestQueryCmd_GUIModifier(t *testing.T) {
+	isolateRegistry(t)
 	resetQueryFlags(t)
 	dir := setupVaultWithTopic(t)
 
@@ -118,6 +123,7 @@ func TestQueryCmd_GUIModifier(t *testing.T) {
 
 // TestQueryCmd_GUIFlag_NonGUIBuild: --gui in non-GUI build → terminal output, no error.
 func TestQueryCmd_GUIFlag_NonGUIBuild(t *testing.T) {
+	isolateRegistry(t)
 	resetQueryFlags(t)
 	dir := setupVaultWithTopic(t)
 
@@ -128,23 +134,20 @@ func TestQueryCmd_GUIFlag_NonGUIBuild(t *testing.T) {
 	}
 }
 
-// TestQueryCmd_UsedFlag: vb disk --why --used → renders output and appends entry to USED.md.
-func TestQueryCmd_UsedFlag(t *testing.T) {
+// TestQueryCmd_UsedLens: vb disk --used → renders USED.md as a proper lens.
+func TestQueryCmd_UsedLens(t *testing.T) {
+	isolateRegistry(t)
 	resetQueryFlags(t)
 	dir := setupVaultWithTopic(t)
 
-	_, err := execCmd(t, dir, "disk", "--why", "--used")
-	if err != nil {
-		t.Fatalf("vb disk --why --used: %v", err)
+	// Create a USED.md with a saved command entry.
+	usedPath := filepath.Join(dir, "hardware", "disk", "USED.md")
+	if err := os.WriteFile(usedPath, []byte("- lsblk — show all block devices\n"), 0o644); err != nil {
+		t.Fatal(err)
 	}
 
-	// USED.md must exist inside the topic directory.
-	usedPath := filepath.Join(dir, "hardware", "disk", "USED.md")
-	data, readErr := os.ReadFile(usedPath)
-	if readErr != nil {
-		t.Fatalf("USED.md not created: %v", readErr)
-	}
-	if len(data) == 0 {
-		t.Error("USED.md is empty — expected at least one log entry")
+	_, err := execCmd(t, dir, "disk", "--used")
+	if err != nil {
+		t.Fatalf("vb disk --used: %v", err)
 	}
 }

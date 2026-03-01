@@ -44,6 +44,7 @@ func setupVaultWithLensFile(t *testing.T, lensFile, content string) string {
 
 // TestLintCmd_Valid: valid WHY.md → exits 0 with schema valid message.
 func TestLintCmd_Valid(t *testing.T) {
+	isolateRegistry(t)
 	resetLintFlags(t)
 	dir := setupVaultWithLensFile(t, "WHY.md", "# Why\n\nBecause it matters.")
 
@@ -56,6 +57,7 @@ func TestLintCmd_Valid(t *testing.T) {
 
 // TestLintCmd_Violation: WHY.md with only a heading (no paragraph) → exits non-zero.
 func TestLintCmd_Violation(t *testing.T) {
+	isolateRegistry(t)
 	resetLintFlags(t)
 	dir := setupVaultWithLensFile(t, "WHY.md", "# Heading only\n")
 
@@ -67,6 +69,7 @@ func TestLintCmd_Violation(t *testing.T) {
 
 // TestLintCmd_TopicNotFound: unknown topic → resolver error.
 func TestLintCmd_TopicNotFound(t *testing.T) {
+	isolateRegistry(t)
 	resetLintFlags(t)
 	dir := setupVaultWithLensFile(t, "WHY.md", "# Why\n\nContent.")
 
@@ -78,6 +81,7 @@ func TestLintCmd_TopicNotFound(t *testing.T) {
 
 // TestLintCmd_LensFileMissing: known topic, lens file not authored → binder error.
 func TestLintCmd_LensFileMissing(t *testing.T) {
+	isolateRegistry(t)
 	resetLintFlags(t)
 	// Only WHY.md exists — REFS.md does not.
 	dir := setupVaultWithLensFile(t, "WHY.md", "# Why\n\nContent.")
@@ -90,6 +94,7 @@ func TestLintCmd_LensFileMissing(t *testing.T) {
 
 // TestLintCmd_NoLens: no lens flag → ErrNoLens.
 func TestLintCmd_NoLens(t *testing.T) {
+	isolateRegistry(t)
 	resetLintFlags(t)
 	dir := setupVaultWithLensFile(t, "WHY.md", "# Why\n\nContent.")
 
