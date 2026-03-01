@@ -1,0 +1,77 @@
+name: Release GUI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  gui-binaries:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            artifact: vb-gui-linux-amd64
+            setup: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev
+          - os: ubuntu-24.04-arm
+            goos: linux
+            goarch: arm64
+            artifact: vb-gui-linux-arm64
+            setup: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            artifact: vb-gui-darwin-arm64
+            setup: ""
+          - os: macos-13
+            goos: darwin
+            goarch: amd64
+            artifact: vb-gui-darwin-amd64
+            setup: ""
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            artifact: vb-gui-windows-amd64.exe
+            setup: ""
+
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Install platform dependencies
+        if: matrix.setup != ''
+        run: ${{ matrix.setup }}
+
+      - name: Build GUI binary
+        env:
+          CGO_ENABLED: 1
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: go build -tags gui -o ${{ matrix.artifact }} .
+
+      - name: Archive (tar.gz)
+        if: matrix.goos != 'windows'
+        run: tar -czf ${{ matrix.artifact }}.tar.gz ${{ matrix.artifact }}
+
+      - name: Archive (zip)
+        if: matrix.goos == 'windows'
+        run: Compress-Archive -Path ${{ matrix.artifact }} -DestinationPath ${{ matrix.artifact }}.zip
+        shell: pwsh
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ matrix.artifact }}.tar.gz
+            ${{ matrix.artifact }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

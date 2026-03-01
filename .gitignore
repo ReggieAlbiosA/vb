@@ -1,0 +1,37 @@
+# Build output
+vb
+vb-gui
+vb.exe
+vb-linux-amd64
+vb-darwin-amd64
+vb-darwin-arm64
+vb-windows-amd64.exe
+dist/
+
+# Generated at release time
+completions/
+man/
+
+# Go test artifacts
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Go workspace (if used)
+go.work
+go.work.sum
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# act runner cache
+.act/
