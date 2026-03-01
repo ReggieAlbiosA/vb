@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ReggieAlbiosA/vb/internal/config"
 	"github.com/ReggieAlbiosA/vb/internal/index"
@@ -18,7 +19,8 @@ var (
 	flagUsed       bool // used as lens flag (LensToFile), no longer a modifier
 	flagGotchas    bool
 	flagRefs       bool
-	flagGUI        bool
+	flagGUI     bool
+	flagMermaid bool
 )
 
 func init() {
@@ -36,6 +38,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&flagGotchas, "gotchas", false, "gotchas and pitfalls")
 	rootCmd.Flags().BoolVar(&flagRefs, "refs", false, "reference links")
 	rootCmd.Flags().BoolVar(&flagGUI, "gui", false, "open in GUI viewer (modifier, not a lens)")
+	rootCmd.Flags().BoolVarP(&flagMermaid, "mermaid", "m", false, "render mermaid (.mmd) instead of markdown (modifier, not a lens)")
 
 	registerCustomLenses(rootCmd)
 }
@@ -83,6 +86,11 @@ func runQuery(cmd *cobra.Command, args []string) error {
 	lensFile, err := resolver.ResolveLens(lens)
 	if err != nil {
 		return err
+	}
+
+	// --mermaid modifier: swap .md → .mmd for mermaid rendering.
+	if flagMermaid && strings.HasSuffix(lensFile, ".md") {
+		lensFile = strings.TrimSuffix(lensFile, ".md") + ".mmd"
 	}
 
 	// Validate file exists.
